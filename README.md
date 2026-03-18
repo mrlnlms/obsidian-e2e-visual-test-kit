@@ -444,6 +444,65 @@ Independente do tipo de plugin, o fluxo e2e segue 3 perguntas:
 
 Se voce consegue responder essas 3 perguntas pro modulo que quer testar, a spec se escreve sozinha seguindo o template.
 
+## Case Study: Qualia Coding
+
+Plugin de analise qualitativa de dados (28k LOC, 150 modulos). Tinha 1263 testes unitarios (Vitest + jsdom) cobrindo ~80% do codigo testavel, mas 82 modulos UI ficavam sem cobertura — jsdom nao renderiza CM6, Chart.js, ou Fabric.js.
+
+### Resultado com obsidian-plugin-e2e
+
+| Metrica | Antes | Depois |
+|---------|-------|--------|
+| Testes unitarios (Vitest) | 1263 | 1263 |
+| Testes e2e (wdio) | 0 | 27 |
+| **Total** | **1263** | **1290** |
+| Specs e2e | 0 | 8 |
+| Screenshots baseline | 0 | 10 |
+| Componentes UI cobertos | 0 | 6 (margin panel, highlights, handles, hover, explorer, analytics) |
+
+### Specs criados
+
+| Spec | Testes | O que valida |
+|------|--------|-------------|
+| smoke.e2e.ts | 3 | Plugin carrega, arquivo abre, editor visivel |
+| margin-panel.e2e.ts | 4 | Bars renderizam, CSS classes, screenshot baseline, hover |
+| highlights.e2e.ts | 4 | Decoracoes CM6, nested markers, screenshot |
+| handle-overlay.e2e.ts | 3 | Container existe, SVGs no hover, screenshot |
+| hover-interaction.e2e.ts | 3 | Hover sync editor↔margin, clear on leave |
+| code-explorer.e2e.ts | 4 | Sidebar renderiza, tree items, code names, screenshot |
+| analytics-frequency.e2e.ts | 3 | View renderiza, toolbar, chart screenshot |
+| analytics-dashboard.e2e.ts | 3 | KPI cards, marker count, dashboard screenshot |
+
+### Tempo de execucao
+
+- **Primeira vez:** ~2min (download Obsidian ~200MB)
+- **Runs subsequentes:** ~1min 20s (8 specs sequenciais, Obsidian abre/fecha 8x)
+- **6 specs escritos em paralelo** por subagents em ~3min
+
+### Estrutura no plugin
+
+```
+qualia-coding/
+  wdio.conf.mts                           ← 8 linhas
+  test/e2e/
+    helpers/qualia.ts                      ← injectQualiaData + mkMarker + SELECTORS
+    vaults/visual/
+      .obsidian/app.json
+      .obsidian/community-plugins.json
+      Sample Coded.md                      ← fixture com 3 secoes
+    specs/
+      smoke.e2e.ts
+      margin-panel.e2e.ts
+      highlights.e2e.ts
+      handle-overlay.e2e.ts
+      hover-interaction.e2e.ts
+      code-explorer.e2e.ts
+      analytics-frequency.e2e.ts
+      analytics-dashboard.e2e.ts
+  test/screenshots/
+    baseline/                              ← 10 screenshots de referencia
+    actual/                                ← gerados a cada run
+```
+
 ## Limitacoes
 
 - Node 18+ (20+ recomendado)
