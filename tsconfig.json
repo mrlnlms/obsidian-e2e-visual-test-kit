@@ -10,7 +10,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["wdio-obsidian-service"]
+    "types": ["node", "@wdio/globals", "wdio-obsidian-service", "@wdio/visual-service"]
   },
   "include": ["src"]
 }
