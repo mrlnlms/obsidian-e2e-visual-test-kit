@@ -503,6 +503,183 @@ qualia-coding/
     actual/                                ← gerados a cada run
 ```
 
+## Setup completo passo a passo
+
+### 1. Instalar dependencias
+
+```bash
+npm install --save-dev --legacy-peer-deps \
+  obsidian-e2e-visual-test-kit@github:mrlnlms/obsidian-e2e-visual-test-kit \
+  wdio-obsidian-service @wdio/visual-service \
+  @wdio/cli @wdio/local-runner @wdio/mocha-framework @wdio/spec-reporter \
+  wdio-obsidian-reporter @types/mocha
+```
+
+**IMPORTANTE:** Sempre usar `--legacy-peer-deps` — os pacotes wdio tem conflitos de peer deps entre si.
+
+### 2. Criar wdio.conf.mts
+
+```typescript
+import { createConfig } from "obsidian-e2e-visual-test-kit";
+
+export const config = createConfig({
+  pluginId: "meu-plugin",        // ID do manifest.json
+  pluginDir: ".",
+  vault: "test/e2e/vaults/visual",
+  specs: ["test/e2e/specs/**/*.e2e.ts"],
+});
+```
+
+### 3. Criar vault de teste
+
+```bash
+mkdir -p test/e2e/vaults/visual/.obsidian test/e2e/specs test/e2e/helpers
+```
+
+```json
+// test/e2e/vaults/visual/.obsidian/app.json
+{ "showInlineTitle": true }
+```
+
+```json
+// test/e2e/vaults/visual/.obsidian/community-plugins.json
+["meu-plugin"]
+```
+
+Adicionar notas/fixtures que o plugin precisa pra funcionar.
+
+### 4. Criar helper de injecao (plugin-specific)
+
+Cada plugin tem sua forma de injetar dados. O pattern:
+
+```typescript
+// test/e2e/helpers/meu-plugin.ts
+import { waitForPlugin } from "obsidian-e2e-visual-test-kit";
+
+export async function injectData(data: Record<string, unknown>) {
+  await waitForPlugin("meu-plugin");
+  await browser.execute((d: Record<string, unknown>) => {
+    const plugin = (window as any).app.plugins.plugins["meu-plugin"];
+    plugin.saveData({ ...plugin.settings, ...d });
+    // Se o plugin tem um metodo de refresh/reload, chamar aqui
+  }, data);
+  await browser.pause(2000);
+}
+
+export const SELECTORS = {
+  // Mapear seletores CSS do plugin
+} as const;
+```
+
+### 5. Criar smoke test primeiro (SEMPRE comecar por aqui)
+
+```typescript
+// test/e2e/specs/smoke.e2e.ts
+import { openFile, waitForPlugin, getActiveFile } from "obsidian-e2e-visual-test-kit";
+
+describe("smoke test", () => {
+  it("plugin loads", async () => {
+    await waitForPlugin("meu-plugin", 30000);
+    const loaded = await browser.execute(() => {
+      return !!(window as any).app.plugins.plugins["meu-plugin"];
+    });
+    expect(loaded).toBe(true);
+  });
+
+  it("opens a file", async () => {
+    await openFile("Sample Note.md");
+    expect(await getActiveFile()).toBe("Sample Note.md");
+  });
+});
+```
+
+### 6. Adicionar scripts no package.json
+
+```json
+{
+  "test:e2e": "wdio run wdio.conf.mts",
+  "test:visual:update": "npx wdio run wdio.conf.mts -- --update-visual-baseline"
+}
+```
+
+### 7. Rodar
+
+```bash
+# Primeiro run baixa Obsidian (~200MB, cached depois em .obsidian-cache/)
+npm run test:e2e -- --spec test/e2e/specs/smoke.e2e.ts
+```
+
+Se o smoke passar, adicionar mais specs seguindo o template.
+
+### 8. Adicionar ao .gitignore
+
+```
+.obsidian-cache/
+test/screenshots/actual/
+test/screenshots/diff/
+```
+
+Os baselines (`test/screenshots/baseline/`) devem ser commitados — sao a referencia visual.
+
+## Armadilhas — o que NAO fazer
+
+Estas licoes foram aprendidas na integracao com Qualia Coding (28k LOC, 18 specs e2e). Nao repetir.
+
+| Armadilha | O que acontece | O que fazer |
+|-----------|---------------|-------------|
+| Instalar sem `--legacy-peer-deps` | Falha com conflito de peer deps | **Sempre** usar a flag |
+| Usar `async/await` dentro de `browser.execute()` | `WebDriverError: status missing` — execute e sincrono | Tudo sincrono dentro de execute, usar `browser.pause()` depois |
+| Usar `require("obsidian")` dentro de `browser.execute()` | Crash — nao disponivel no contexto Electron | Construir DOM manualmente ou acessar via `window.app` |
+| Screenshot baselines no CI (Linux) | 60%+ mismatch vs baselines macOS | Screenshots sao machine-dependent — visual comparison so local |
+| Command IDs sem prefixo do plugin | `executeCommand("open-settings")` nao encontra | Verificar o ID real — pode ser `plugin-id:command-name` |
+| Herdar de classe intermediaria (`MyView extends MediaView extends ItemView`) | View nao carrega no Obsidian | Obsidian pode ter edge case com heranca indireta de ItemView |
+| `openFile` sem espera suficiente | Elementos nao renderizaram | Sempre `waitForElement(selector, 10000)` apos openFile |
+| Screenshots de componentes media (audio/video) | Flaky por timing do WaveSurfer | Aumentar pause pra 8000ms |
+| Esquecer `waitForPlugin()` antes de injetar dados | Plugin nao carregou ainda, inject silently fails | **Sempre** chamar waitForPlugin antes de browser.execute no helper |
+| Commitar `test/screenshots/actual/` e `test/screenshots/diff/` | Lixo de cada run enche o repo | Adicionar ao .gitignore, commitar so `baseline/` |
+
+## CI (GitHub Actions)
+
+O e2e funciona no CI via xvfb (display virtual pra Electron). Porem **screenshots visuais falham** porque Linux renderiza fonts/anti-aliasing diferente do macOS. A solucao: rodar so smoke test no CI, visual comparison fica local.
+
+```yaml
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+      - run: npm test
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+      - uses: actions/cache@v4
+        with:
+          path: .obsidian-cache
+          key: obsidian-${{ runner.os }}
+      - name: E2E smoke test
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: npx wdio run wdio.conf.mts --spec test/e2e/specs/smoke.e2e.ts
+```
+
 ## Limitacoes
 
 - Node 18+ (20+ recomendado)
