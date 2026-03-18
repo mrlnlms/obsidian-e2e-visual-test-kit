@@ -2,6 +2,28 @@
 
 Harness reutilizavel para testes visuais e de DOM em plugins Obsidian. Abre o Obsidian real, navega como uma pessoa, tira screenshots, e valida o estado do DOM.
 
+## Resultados
+
+Primeiro plugin integrado: **Qualia Coding** (QDA plugin, 28k LOC)
+
+```
+» smoke.e2e.ts
+   ✓ Obsidian loads and plugin is available
+   ✓ can open a file
+   ✓ editor is visible
+
+» margin-panel.e2e.ts
+   ✓ renders margin bars for coded segments
+   ✓ margin bars have correct CSS classes
+   ✓ visual baseline — margin panel with 2 markers
+   ✓ hover highlights bar
+
+7 passing — Obsidian v1.12.4 (installer v1.5.8, macOS)
+Spec Files: 2 passed, 2 total in 00:00:17
+```
+
+Complementa 1263 testes unitarios (Vitest + jsdom) que cobrem logica pura. Este harness cobre o que jsdom nao alcanca: rendering visual, CM6 decorations, interacoes de hover/drag, e visual regression via screenshots.
+
 ## O que faz
 
 Voce escreve specs simples no seu plugin, e o harness cuida do resto:
@@ -101,7 +123,8 @@ const snapshots = await captureDomState('[data-mirror-key]');
 ### 1. Instalar
 
 ```bash
-npm install --save-dev obsidian-plugin-e2e@file:../../obsidian-plugin-e2e \
+npm install --save-dev --legacy-peer-deps \
+  obsidian-plugin-e2e@file:../../obsidian-plugin-e2e \
   wdio-obsidian-service @wdio/visual-service \
   @wdio/cli @wdio/local-runner @wdio/mocha-framework @wdio/spec-reporter \
   wdio-obsidian-reporter @types/mocha
@@ -131,6 +154,8 @@ test/e2e/vaults/visual/
 ```
 
 ### 4. Criar helper de injecao (plugin-specific)
+
+Cada plugin tem sua propria forma de injetar dados. O pattern geral:
 
 ```typescript
 // test/e2e/helpers/meu-plugin.ts
@@ -193,3 +218,4 @@ npx wdio run wdio.conf.mts
 - `browser.execute()` e sincrono — sem async/await dentro
 - iOS nao suportado
 - `maxInstances: 1` (Obsidian e desktop app)
+- Usar `--legacy-peer-deps` no install (conflitos de peer deps entre wdio packages)
