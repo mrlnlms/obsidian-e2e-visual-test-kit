@@ -308,15 +308,141 @@ describe('nome do componente', () => {
 | CSV view | `openFile('data.csv')` |
 | Context menu | `hoverElement('.element')` + click |
 
-### Ordem recomendada pra cobrir gaps
+### Ordem recomendada pra cobrir gaps (Qualia Coding)
 
-1. **Smoke test** — plugin carrega, arquivo abre (ja feito no Qualia)
-2. **Margin panel** — layout de colunas, labels, hover (ja feito no Qualia)
+1. **Smoke test** — plugin carrega, arquivo abre (ja feito)
+2. **Margin panel** — layout de colunas, labels, hover (ja feito)
 3. **Highlights no editor** — markers visualmente corretos
 4. **Sidebar views** — explorer e detail panel renderizam
 5. **Analytics modes** — cada mode renderiza chart/tabela
 6. **PDF/Image/CSV views** — cada engine renderiza corretamente
 7. **Modais e menus** — interacoes de UI
+
+### Exemplo: Mirror Notes (DOM injection plugin)
+
+O Mirror Notes injeta containers HTML em posicoes especificas do editor (above-title, below-properties, etc.). O gap de teste e diferente — nao e visual rendering de charts, e **validacao de posicao DOM + conteudo renderizado**.
+
+**O que muda em relacao ao Qualia:**
+
+| Aspecto | Qualia Coding | Mirror Notes |
+|---------|---------------|--------------|
+| Estado a injetar | markers + codeDefinitions | settings + templates no frontmatter |
+| O que renderiza | highlights, margin bars, charts | containers HTML em posicoes do editor |
+| Como valida | screenshot dos componentes | `assertDomState` com `data-position`, `innerHTML` |
+| Seletores chave | `.codemarker-margin-panel`, `.codemarker-highlight` | `[data-position="above-title"]`, `.mirror-dom-injection` |
+| Interacao | hover, drag | multi-pane isolation, re-render on config change |
+
+**Spec de exemplo pro Mirror Notes:**
+
+```typescript
+import { openFile, waitForElement, assertDomState, captureDomState, checkComponent } from 'obsidian-plugin-e2e';
+import { injectMirrorConfig, SELECTORS } from '../helpers/mirror.js';
+
+describe('injection positions', () => {
+  before(async () => {
+    await injectMirrorConfig({
+      templates: {
+        'above-title': '# Mirror: {{title}}',
+        'below-properties': 'Tags: {{tags}}',
+      },
+    });
+    await openFile('Test Note.md');
+    await waitForElement(SELECTORS.injection, 10000);
+  });
+
+  it('above-title container is in correct position', async () => {
+    await assertDomState(SELECTORS.aboveTitle, {
+      visible: true,
+      dataAttributes: { 'data-position': 'above-title' },
+      innerHTML: { contains: ['Mirror:'] },
+    });
+  });
+
+  it('below-properties container renders template', async () => {
+    await assertDomState(SELECTORS.belowProperties, {
+      visible: true,
+      innerHTML: { contains: ['Tags:'] },
+    });
+  });
+
+  it('visual baseline — all injection positions', async () => {
+    await checkComponent('.markdown-preview-sizer', 'mirror-all-positions');
+  });
+});
+
+describe('multi-pane isolation', () => {
+  it('same file in two panes has independent containers', async () => {
+    // Abrir segundo pane
+    await browser.execute(() => {
+      (window as any).app.workspace.getLeaf('split').openFile(
+        (window as any).app.workspace.getActiveFile()
+      );
+    });
+    await browser.pause(2000);
+
+    // Capturar estado de todos os containers
+    const snapshots = await captureDomState('[data-mirror-key]');
+
+    // Deve ter containers de ambos os panes
+    const keys = snapshots.map(s => s.attributes['data-mirror-key']);
+    const uniqueViewIds = new Set(keys.map(k => k.split('-')[1]));
+    expect(uniqueViewIds.size).toBeGreaterThanOrEqual(2);
+  });
+});
+```
+
+**Helper do Mirror Notes:**
+
+```typescript
+// test/e2e/helpers/mirror.ts
+import { waitForPlugin } from 'obsidian-plugin-e2e';
+
+export async function injectMirrorConfig(config: Record<string, unknown>) {
+  await waitForPlugin('obsidian-mirror-notes');
+  await browser.execute((c: Record<string, unknown>) => {
+    const plugin = (window as any).app.plugins.plugins['obsidian-mirror-notes'];
+    plugin.saveData({ ...plugin.settings, ...c });
+    plugin.refresh();
+  }, config);
+  await browser.pause(2000);
+}
+
+export const SELECTORS = {
+  injection: '.mirror-dom-injection',
+  aboveTitle: '[data-position="above-title"]',
+  aboveProperties: '[data-position="above-properties"]',
+  belowProperties: '[data-position="below-properties"]',
+  aboveBacklinks: '[data-position="above-backlinks"]',
+  belowBacklinks: '[data-position="below-backlinks"]',
+  top: '[data-position="top"]',
+  bottom: '[data-position="bottom"]',
+} as const;
+```
+
+### Pattern generico pra qualquer plugin
+
+Independente do tipo de plugin, o fluxo e2e segue 3 perguntas:
+
+1. **Que estado precisa existir?**
+   - Coding plugin → markers, code definitions
+   - Injection plugin → settings, templates, frontmatter
+   - Dashboard plugin → data sources, config
+   - Qualquer plugin → `injectData()` no helper
+
+2. **Como chego no componente?**
+   - Editor → `openFile()` + `focusEditor()`
+   - Sidebar → `openSidebar()` + `switchSidebarTab()`
+   - Modal → `executeCommand()`
+   - Custom view → `executeCommand()` que abre a view
+
+3. **O que valido?**
+   - Existe e esta visivel → `assertDomState({ visible: true })`
+   - Tem o conteudo certo → `assertDomState({ innerHTML: { contains: [...] } })`
+   - Tem os atributos certos → `assertDomState({ dataAttributes: { ... } })`
+   - Parece certo visualmente → `checkComponent(selector, tag)`
+   - Interacao funciona → `hoverElement()` / click + re-assert
+
+Se voce consegue responder essas 3 perguntas pro modulo que quer testar, a spec se escreve sozinha seguindo o template.
 
 ## Limitacoes
 
