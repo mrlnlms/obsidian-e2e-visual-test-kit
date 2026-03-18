@@ -1,13 +1,20 @@
 {
-  "name": "obsidian-plugin-e2e",
+  "name": "obsidian-e2e-visual-test-kit",
   "version": "0.1.0",
-  "description": "Reusable e2e test harness for Obsidian plugins",
+  "description": "E2E visual test kit for Obsidian plugins — navigation, screenshots, DOM assertions",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrlnlms/obsidian-e2e-visual-test-kit.git"
+  },
+  "license": "MIT",
+  "keywords": ["obsidian", "e2e", "visual-testing", "wdio", "screenshot", "regression"],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepare": "tsc"
   },
   "peerDependencies": {
     "@wdio/visual-service": "^9.2.0",

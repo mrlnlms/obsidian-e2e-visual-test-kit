@@ -1,4 +1,4 @@
-# obsidian-plugin-e2e
+# obsidian-e2e-visual-test-kit
 
 Harness reutilizavel para testes visuais e de DOM em plugins Obsidian. Abre o Obsidian real, navega como uma pessoa, tira screenshots, e valida o estado do DOM.
 
@@ -29,7 +29,7 @@ Complementa 1263 testes unitarios (Vitest + jsdom) que cobrem logica pura. Este 
 Voce escreve specs simples no seu plugin, e o harness cuida do resto:
 
 ```typescript
-import { openFile, waitForElement, checkComponent, assertDomState } from 'obsidian-plugin-e2e';
+import { openFile, waitForElement, checkComponent, assertDomState } from 'obsidian-e2e-visual-test-kit';
 
 describe('margin panel', () => {
   it('renders coded segments', async () => {
@@ -55,7 +55,7 @@ describe('margin panel', () => {
 ```
 wdio-obsidian-service (npm)     ← baixa Obsidian, cria vault, instala plugin
         ↓
-obsidian-plugin-e2e (este repo) ← navega, tira print, valida DOM
+obsidian-e2e-visual-test-kit (este repo) ← navega, tira print, valida DOM
         ↓
 seu plugin (specs)              ← cenarios especificos, dados de teste
 ```
@@ -66,7 +66,7 @@ Gera um `wdio.conf` completo com 4 linhas:
 
 ```typescript
 // seu-plugin/wdio.conf.mts
-import { createConfig } from 'obsidian-plugin-e2e';
+import { createConfig } from 'obsidian-e2e-visual-test-kit';
 
 export const config = createConfig({
   pluginId: 'qualia-coding',
@@ -124,7 +124,7 @@ const snapshots = await captureDomState('[data-mirror-key]');
 
 ```bash
 npm install --save-dev --legacy-peer-deps \
-  obsidian-plugin-e2e@file:../../obsidian-plugin-e2e \
+  obsidian-e2e-visual-test-kit@file:../../obsidian-e2e-visual-test-kit \
   wdio-obsidian-service @wdio/visual-service \
   @wdio/cli @wdio/local-runner @wdio/mocha-framework @wdio/spec-reporter \
   wdio-obsidian-reporter @types/mocha
@@ -133,7 +133,7 @@ npm install --save-dev --legacy-peer-deps \
 ### 2. Criar wdio.conf.mts
 
 ```typescript
-import { createConfig } from 'obsidian-plugin-e2e';
+import { createConfig } from 'obsidian-e2e-visual-test-kit';
 
 export const config = createConfig({
   pluginId: 'meu-plugin',
@@ -159,7 +159,7 @@ Cada plugin tem sua propria forma de injetar dados. O pattern geral:
 
 ```typescript
 // test/e2e/helpers/meu-plugin.ts
-import { waitForPlugin } from 'obsidian-plugin-e2e';
+import { waitForPlugin } from 'obsidian-e2e-visual-test-kit';
 
 export async function injectData(data: Record<string, unknown>) {
   await waitForPlugin('meu-plugin');
@@ -175,7 +175,7 @@ export async function injectData(data: Record<string, unknown>) {
 
 ```typescript
 // test/e2e/specs/smoke.e2e.ts
-import { openFile, waitForPlugin, getActiveFile } from 'obsidian-plugin-e2e';
+import { openFile, waitForPlugin, getActiveFile } from 'obsidian-e2e-visual-test-kit';
 
 describe('smoke', () => {
   it('plugin loads', async () => {
@@ -245,7 +245,7 @@ Para cada modulo UI sem cobertura, siga este pattern:
 **3. Escreva o spec seguindo este template:**
 
 ```typescript
-import { openFile, focusEditor, waitForElement, checkComponent, assertDomState } from 'obsidian-plugin-e2e';
+import { openFile, focusEditor, waitForElement, checkComponent, assertDomState } from 'obsidian-e2e-visual-test-kit';
 import { injectData, SELECTORS } from '../helpers/meu-plugin.js';
 
 describe('nome do componente', () => {
@@ -335,7 +335,7 @@ O Mirror Notes injeta containers HTML em posicoes especificas do editor (above-t
 **Spec de exemplo pro Mirror Notes:**
 
 ```typescript
-import { openFile, waitForElement, assertDomState, captureDomState, checkComponent } from 'obsidian-plugin-e2e';
+import { openFile, waitForElement, assertDomState, captureDomState, checkComponent } from 'obsidian-e2e-visual-test-kit';
 import { injectMirrorConfig, SELECTORS } from '../helpers/mirror.js';
 
 describe('injection positions', () => {
@@ -395,7 +395,7 @@ describe('multi-pane isolation', () => {
 
 ```typescript
 // test/e2e/helpers/mirror.ts
-import { waitForPlugin } from 'obsidian-plugin-e2e';
+import { waitForPlugin } from 'obsidian-e2e-visual-test-kit';
 
 export async function injectMirrorConfig(config: Record<string, unknown>) {
   await waitForPlugin('obsidian-mirror-notes');
@@ -448,7 +448,7 @@ Se voce consegue responder essas 3 perguntas pro modulo que quer testar, a spec 
 
 Plugin de analise qualitativa de dados (28k LOC, 150 modulos). Tinha 1263 testes unitarios (Vitest + jsdom) cobrindo ~80% do codigo testavel, mas 82 modulos UI ficavam sem cobertura — jsdom nao renderiza CM6, Chart.js, ou Fabric.js.
 
-### Resultado com obsidian-plugin-e2e
+### Resultado com obsidian-e2e-visual-test-kit
 
 | Metrica | Antes | Depois |
 |---------|-------|--------|
