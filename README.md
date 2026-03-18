@@ -210,6 +210,114 @@ npx wdio run wdio.conf.mts
 6. Screenshots sao comparados pixel-a-pixel via `@wdio/visual-service`
 7. Obsidian fecha quando os testes terminam
 
+## Cobrindo gaps de teste (guia pra LLMs)
+
+Plugins Obsidian tipicamente tem dois tipos de codigo:
+
+- **Logica pura** (models, engines, helpers) — testavel com Vitest + jsdom
+- **UI/DOM** (views, renderers, CM6 extensions, canvas) — **so testavel com este harness**
+
+Quando a cobertura de testes unitarios atinge o teto (~80%), os modulos restantes sao UI. Este harness existe pra cobrir esse gap.
+
+### Como identificar os gaps
+
+Rode uma analise de cobertura nos testes unitarios. Modulos que NAO tem testes e importam de `obsidian`, `@codemirror`, `fabric`, `ag-grid-community`, `chart.js`, ou `wavesurfer` sao candidatos a e2e.
+
+Exemplo do Qualia Coding — 82 modulos UI sem cobertura unitaria:
+
+| Categoria | Exemplos | O que testar via e2e |
+|-----------|----------|---------------------|
+| CM6 extensions | marginPanelExtension, markerViewPlugin, handleOverlayRenderer | Screenshot do painel, hover state, drag handles |
+| Analytics modes | frequencyMode, cooccurrenceMode, dendrogramMode (19 modes) | Screenshot do chart renderizado, config controls |
+| PDF rendering | highlightRenderer, drawInteraction, dragHandles | Screenshot dos highlights, arrastar handles |
+| Fabric.js canvas | boardCanvas, boardDrawing, regionDrawing | Screenshot do board, interacao com nodes |
+| Views Obsidian | analyticsView, boardView, csvCodingView, imageView | Abrir view, verificar DOM, screenshot |
+| Menus/Modals | codingPopover, codeBrowserModal, settingTab | Abrir modal, verificar conteudo |
+
+### Como converter um gap em spec e2e
+
+Para cada modulo UI sem cobertura, siga este pattern:
+
+**1. Identifique o que o modulo renderiza** — qual elemento DOM ele cria? Qual seletor CSS?
+
+**2. Identifique o estado necessario** — que dados precisam existir pra esse modulo renderizar? (markers, code definitions, settings)
+
+**3. Escreva o spec seguindo este template:**
+
+```typescript
+import { openFile, focusEditor, waitForElement, checkComponent, assertDomState } from 'obsidian-plugin-e2e';
+import { injectData, SELECTORS } from '../helpers/meu-plugin.js';
+
+describe('nome do componente', () => {
+  before(async () => {
+    // 1. Injetar dados necessarios
+    await injectData({ /* markers, settings, etc */ });
+
+    // 2. Navegar ate o componente
+    await openFile('fixture.md');      // ou executeCommand(), switchSidebarTab(), etc.
+    await focusEditor();
+
+    // 3. Esperar o componente renderizar
+    await waitForElement(SELECTORS.meuComponente, 10000);
+  });
+
+  // 4. Validar estrutura DOM
+  it('renderiza corretamente', async () => {
+    await assertDomState(SELECTORS.meuComponente, {
+      visible: true,
+      childCount: { min: 1 },
+      classList: { contains: ['classe-esperada'] },
+    });
+  });
+
+  // 5. Screenshot baseline
+  it('visual baseline', async () => {
+    const mismatch = await checkComponent(SELECTORS.meuComponente, 'tag-descritiva');
+    expect(mismatch).toBeLessThan(1);
+  });
+
+  // 6. Testar interacao (se aplicavel)
+  it('hover/click state', async () => {
+    await hoverElement(SELECTORS.elementoInterativo);
+    const mismatch = await checkComponent(SELECTORS.meuComponente, 'tag-hover');
+    expect(mismatch).toBeLessThan(2);
+  });
+});
+```
+
+### Regras pra specs e2e
+
+- **1 spec por componente visual** — nao misturar margin panel com analytics
+- **Dados minimos** — injetar so o necessario pra renderizar (2-3 markers, nao 100)
+- **Screenshots granulares** — capturar o componente, nao a tela inteira
+- **Tolerancia de 1-2%** — anti-aliasing e subpixel rendering variam
+- **Pausa apos navegacao** — os helpers ja incluem pausa, mas adicione mais se o componente e async
+- **Tag descritiva** — `margin-2markers-hover`, nao `test1`
+- **`before()` pra setup** — injecao de dados e navegacao ficam no before, nao em cada it()
+
+### Mapeamento de navegacao por tipo de componente
+
+| Componente | Como chegar |
+|------------|-------------|
+| Editor (highlights, margin panel) | `openFile()` + `focusEditor()` |
+| Sidebar view | `openSidebar('right')` + `switchSidebarTab('view-type')` |
+| Modal | `executeCommand('plugin:open-modal')` |
+| Settings tab | `executeCommand('app:open-settings')` + navegar ate a aba |
+| Analytics view | `executeCommand('plugin:open-analytics')` |
+| PDF view | `openFile('document.pdf')` |
+| CSV view | `openFile('data.csv')` |
+| Context menu | `hoverElement('.element')` + click |
+
+### Ordem recomendada pra cobrir gaps
+
+1. **Smoke test** — plugin carrega, arquivo abre (ja feito no Qualia)
+2. **Margin panel** — layout de colunas, labels, hover (ja feito no Qualia)
+3. **Highlights no editor** — markers visualmente corretos
+4. **Sidebar views** — explorer e detail panel renderizam
+5. **Analytics modes** — cada mode renderiza chart/tabela
+6. **PDF/Image/CSV views** — cada engine renderiza corretamente
+7. **Modais e menus** — interacoes de UI
+
 ## Limitacoes
 
 - Node 18+ (20+ recomendado)
