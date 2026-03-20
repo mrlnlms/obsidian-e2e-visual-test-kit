@@ -1,6 +1,6 @@
 {
   "name": "obsidian-e2e-visual-test-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "E2E visual test kit for Obsidian plugins — navigation, screenshots, DOM assertions",
   "repository": {
     "type": "git",
@@ -17,15 +17,18 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "@wdio/globals": "^9.26.1",
+    "@wdio/types": "^9.0.0",
+    "@wdio/visual-service": "^9.2.0",
+    "wdio-obsidian-service": "^2.4.0"
+  },
+  "devDependencies": {
     "typescript": "^5.7.0",
     "@types/node": "^25.5.0",
     "@types/mocha": "^10.0.10",
-    "@wdio/globals": "^9.26.1",
-    "@wdio/types": "^9.0.0"
+    "webdriverio": "^9.18.0"
   },
   "peerDependencies": {
-    "@wdio/visual-service": "^9.2.0",
-    "wdio-obsidian-service": "^2.4.0",
     "webdriverio": "^9.18.0"
   }
 }
