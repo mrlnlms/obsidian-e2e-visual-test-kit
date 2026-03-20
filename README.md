@@ -2,8 +2,7 @@
 
 E2E visual test kit for Obsidian plugins — open the real app, navigate like a person, take screenshots, assert DOM state. Works with any plugin.
 
-<!-- TODO: replace with GitHub user-attachments URL after uploading via issue -->
-[**Watch demo**](docs/assets/e2e-demo.mp4) — E2E tests running against two different plugins in the real Obsidian app
+https://github.com/user-attachments/assets/cd850036-a1d3-4459-9d8a-18719c7c8093
 
 ## Why
 
