@@ -1,50 +1,31 @@
 # Case Study: Mirror Notes
 
-Plugin de DOM injection + CM6 widgets que renderiza templates dinamicos em 9 posicoes do editor. 267 testes unitarios cobriam logica pura — este harness cobriu o que jsdom nao alcanca.
+Plugin de DOM injection + CM6 widgets que renderiza templates dinamicos em 9 posicoes do editor. 395 testes unitarios cobriam logica pura — este harness cobriu o que jsdom nao alcanca.
 
-## Numeros
+## Numbers
 
-```
-» smoke.e2e.ts
-   ✓ plugin loads and is available
-   ✓ can open a file and mirrors render
-   ✓ editor is visible and widget has content
+| Metric | Before | After |
+|--------|--------|-------|
+| Unit tests (Vitest) | 267 | 395 |
+| E2E tests (wdio) | 0 | 39 |
+| **Total** | **267** | **434** |
+| E2E specs | 0 | 8 |
+| Screenshot baselines | 0 | ~10 |
 
-» positions.e2e.ts
-   ✓ above-title renders with correct position and content
-   ✓ above-properties renders with correct position and content
-   ✓ below-properties renders with correct position and content
-   ✓ above-backlinks renders or falls back gracefully
-   ✓ below-backlinks renders or falls back gracefully
-   ✓ top widget renders as CM6 widget with correct attributes
-   ✓ bottom widget renders as CM6 widget
-   ✓ note with no matching mirrors has no widgets
+## Specs
 
-» mode-switch.e2e.ts
-   ✓ starts in Live Preview with LP template
-   ✓ switches to Reading View and shows RV template
-   ✓ switches back to LP and restores LP template
-   ✓ no leaked override classes after mode switch
+| Spec | Tests | What it validates |
+|------|-------|-------------------|
+| smoke | 3 | Plugin loads, file opens, mirrors render |
+| positions | 8 | 5 DOM positions + 2 CM6 widgets + negative test |
+| mode-switch | 4 | LP→RV→LP, dual templates, no leaked CSS classes |
+| lifecycle | 4 | Cold start, unload cleanup, re-enable, no orphans |
+| visual-baselines | 6 | Screenshots: above-title, viewport, CM6, RV, roundtrip |
+| code-blocks | 5 | Render, frontmatter variable, RV, source reference, border |
+| advanced-behaviors | 7 | Multi-pane isolation (3), code block multi-pane (2), MutationObserver recovery (2) |
+| suggest | 2 | File suggest dropdown, folder suggest dropdown |
 
-» lifecycle.e2e.ts
-   ✓ cold start: plugin loads and renders mirrors on first file open
-   ✓ plugin unload cleans all DOM mirrors
-   ✓ plugin re-enable restores mirrors
-   ✓ no orphan widgets after navigating between files
-
-» visual-baselines.e2e.ts
-   ✓ above-title container baseline
-   ✓ viewport with above-title mirror
-   ✓ top CM6 widget baseline
-   ✓ bottom CM6 widget baseline
-   ✓ RV template container baseline
-   ✓ viewport baseline after LP→RV→LP round trip
-
-25 passing — Obsidian v1.12.4 (installer v1.5.8, macOS)
-Spec Files: 5 passed, 5 total in 00:05:25
-```
-
-Complementa 267 testes unitarios (Vitest + jsdom) que cobrem logica pura.
+Complementa 395 testes unitarios (Vitest + jsdom) que cobrem logica pura.
 
 ## O que o plugin faz
 

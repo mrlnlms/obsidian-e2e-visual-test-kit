@@ -2,6 +2,10 @@
 
 E2E visual test kit for Obsidian plugins — open the real app, navigate like a person, take screenshots, assert DOM state. Works with any plugin.
 
+<video src="docs/assets/e2e-demo.mp4" autoplay loop muted playsinline width="100%"></video>
+
+*E2E tests running against two different plugins in the real Obsidian app*
+
 ## Why
 
 Vitest + jsdom covers pure logic (~80%), but can't test visual rendering (CM6, Chart.js, Fabric.js, canvas), DOM structure in Obsidian's real context, or interaction states (hover, drag, selection). This kit fills that gap.
@@ -10,8 +14,8 @@ Vitest + jsdom covers pure logic (~80%), but can't test visual rendering (CM6, C
 
 | Plugin | Unit tests | E2E tests | Total | Specs |
 |--------|-----------|-----------|-------|-------|
-| [Qualia Coding](docs/case-studies/qualia-coding.md) (28k LOC) | 1,269 | 65 | 1,334 | 18 |
-| [Mirror Notes](docs/case-studies/mirror-notes.md) | — | — | — | — |
+| [Qualia Coding](docs/case-studies/qualia-coding.md) (28k LOC) | 1,503 | 65 | 1,568 | 18 |
+| [Mirror Notes](docs/case-studies/mirror-notes.md) (7k LOC) | 395 | 39 | 434 | 8 |
 
 ## Quick start
 

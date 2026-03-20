@@ -10,9 +10,9 @@ Had 1,269 unit tests (Vitest + jsdom) covering ~80% of testable code, but 82 UI 
 
 | Metric | Before | After |
 |--------|--------|-------|
-| Unit tests (Vitest) | 1,269 | 1,269 |
+| Unit tests (Vitest) | 1,269 | 1,503 |
 | E2E tests (wdio) | 0 | 65 |
-| **Total** | **1,269** | **1,334** |
+| **Total** | **1,269** | **1,568** |
 | E2E specs | 0 | 18 |
 | Screenshot baselines | 0 | ~20 |
 | UI components covered | 0 | All 6 engines + analytics + sidebar + modals + settings |
