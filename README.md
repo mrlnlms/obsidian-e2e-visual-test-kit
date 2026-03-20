@@ -2,9 +2,8 @@
 
 E2E visual test kit for Obsidian plugins — open the real app, navigate like a person, take screenshots, assert DOM state. Works with any plugin.
 
-<video src="docs/assets/e2e-demo.mp4" autoplay loop muted playsinline width="100%"></video>
-
-*E2E tests running against two different plugins in the real Obsidian app*
+<!-- TODO: replace with GitHub user-attachments URL after uploading via issue -->
+[**Watch demo**](docs/assets/e2e-demo.mp4) — E2E tests running against two different plugins in the real Obsidian app
 
 ## Why
 

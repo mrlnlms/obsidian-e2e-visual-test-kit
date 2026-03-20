@@ -19,7 +19,6 @@ jobs:
 
       - run: npm install --legacy-peer-deps
 
-      - name: Install peer deps for type checking
-        run: npm install --no-save --legacy-peer-deps @wdio/visual-service wdio-obsidian-service webdriverio
+      - run: npm install --no-save --legacy-peer-deps @wdio/visual-service wdio-obsidian-service webdriverio
 
-      - run: npx tsc --noEmit
+      - run: npm run build
