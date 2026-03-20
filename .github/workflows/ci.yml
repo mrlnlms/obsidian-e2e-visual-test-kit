@@ -19,4 +19,7 @@ jobs:
 
       - run: npm install --legacy-peer-deps
 
-      - run: npx tsc -p tsconfig.ci.json
+      - name: Install peer deps for type checking
+        run: npm install --no-save --legacy-peer-deps @wdio/visual-service wdio-obsidian-service webdriverio
+
+      - run: npx tsc --noEmit
